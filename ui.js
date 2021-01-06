@@ -8,6 +8,7 @@ $(async function() {
   const $ownStories = $("#my-articles");
   const $navLogin = $("#nav-login");
   const $navLogOut = $("#nav-logout");
+  const $navLinks = $("#main-nav-links");
 
   // global storyList variable
   let storyList = null;
@@ -160,6 +161,7 @@ $(async function() {
     // render story markup
     const storyMarkup = $(`
       <li id="${story.storyId}">
+        <span class='star'></span>
         <a class="article-link" href="${story.url}" target="a_blank">
           <strong>${story.title}</strong>
         </a>
@@ -189,6 +191,7 @@ $(async function() {
   function showNavForLoggedInUser() {
     $navLogin.hide();
     $navLogOut.show();
+    $navLinks.show();
   }
 
   /* simple function to pull the hostname from a URL */
@@ -214,4 +217,23 @@ $(async function() {
       localStorage.setItem("username", currentUser.username);
     }
   }
+
+  //show submit form when it is clicked on in the nav
+  $("body").on("click", "#nav-submit-story", async function() {
+    $submitForm.toggle();
+  });
+
+  $submitForm.on("submit", async function(evt) {
+    evt.preventDefault(); // no page-refresh on submit
+    submitStory();
+    $submitForm.reset();
+  });
+
+  async function submitStory(){
+    const story = {author: $("#author").val(), title: $("#title").val(), url: $("#url").val()};
+    const newStory = await StoryList.addStory(currentUser, story);
+    generateStories();
+  }
 });
+
+
