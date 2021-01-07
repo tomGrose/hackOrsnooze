@@ -56,7 +56,7 @@ class StoryList {
     // build a new Story instance from the API response
     const newStoryData = new Story(response.data.story);
 
-    // returns the new story so it can be appeneded to the DOM
+    // returns the new story
     return newStoryData;
   }
 }
@@ -178,6 +178,28 @@ class User {
       }
     });
     this.favorites = result.data.user.favorites.map(s => new Story(s));
+  }
+  async deleteStory(id) {
+    const result = await axios.delete(`https://hack-or-snooze-v3.herokuapp.com/stories/${id}`, { params:  {
+        token: this.loginToken
+      }
+    });
+
+    const dltedStory = new Story(result.data.story);
+
+    // return deleted story for potential future functionality
+    return dltedStory;
+  }
+
+  async updateOwnStories() {
+    //Retrieve updated own storys from user profile
+    const response = await axios.get(`${BASE_URL}/users/${this.username}`,{params: {
+      token: this.loginToken
+    }});
+
+    const ownStories = response.data.user.stories.map(s => new Story(s));
+    this.ownStories = ownStories;
+    return ownStories;
   }
 
 }

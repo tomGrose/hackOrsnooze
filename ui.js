@@ -10,6 +10,7 @@ $(async function() {
   const $navLogOut = $("#nav-logout");
   const $navLinks = $("#main-nav-links");
   const $favArticles = $("#favorited-articles");
+  const $userArticles = $("#my-articles");
 
   // global storyList variable
   let storyList = null;
@@ -188,7 +189,8 @@ $(async function() {
       $ownStories,
       $loginForm,
       $createAccountForm,
-      $favArticles
+      $favArticles,
+      $userArticles
     ];
     elementsArr.forEach($elem => $elem.hide());
   }
@@ -223,18 +225,33 @@ $(async function() {
     }
   }
 
+  // EVENT HANDLERS
+
   //show submit form when it is clicked on in the nav
-  $("body").on("click", "#nav-submit-story", async function() {
+  $("body").on("click", "#nav-submit-story", function() {
     $submitForm.toggle();
   });
 
   //Show favorites list when clicked on
-  $("body").on("click", "#nav-favorites", async function() {
+  $("body").on("click", "#nav-favorites", function() {
     hideElements();
     $favArticles.toggle();
     populateUserFavs();
   });
 
+  //Show My Stories list when clicked on
+  $("body").on("click", "#nav-my-stories", function() {
+    hideElements();
+    $userArticles.toggle();
+    populateOwnArticles();
+  });
+
+  //Show My Stories list when clicked on
+  $("body").on("click", ".dltButton", function() {
+    handleStoryDelete($(this).parent().attr('id'));
+  });
+
+  // Handle story submit
   $submitForm.on("submit", async function(evt) {
     evt.preventDefault(); // no page-refresh on submit
     submitStory();
@@ -242,19 +259,24 @@ $(async function() {
     $submitForm.trigger("reset");
   });
 
-  // get new story values from submit form, call addStory method on storyList class. Generate stories so the Dom updates
-  async function submitStory(){
-    const story = {author: $("#author").val(), title: $("#title").val(), url: $("#url").val()};
-    const newStory = await StoryList.addStory(currentUser, story);
-    generateStories();
-  }
-
   // Create event listener that calls handle fav clicks when a star is clicked
   $("body").on("click", ".fa-star", async function() {
     const $clickedStar = $(this);
     const clickedStoryId = $(this).parents("li").attr('id');
     handleFavClicks(clickedStoryId, $clickedStar);
   });
+
+  // SUBMIT FORM FUNCTIONALITY
+
+  // get new story values from submit form, call addStory method on storyList class. Generate stories so the Dom updates
+  async function submitStory(){
+    const story = {author: $("#author").val(), title: $("#title").val(), url: $("#url").val()};
+    const newStory = await StoryList.addStory(currentUser, story);
+    const usersStories = await currentUser.updateOwnStories();
+    generateStories();
+  }
+
+// USER FAVORITES FUNCTIONALITY
 
   // Look through user's favorites to see if the clicked star is in it. If it is uncheck star and remove from favorites
   // If it is not add to favorites
@@ -278,11 +300,13 @@ $(async function() {
 
   //check the stories on the page and highlight stars if in users favorites
   function starFavorites(){
-    const storyIds = Array.from($('li').attr('id'));
-    for (story of currentUser.favorites){
-      const favId = story.storyId;
-      $(`#${favId}`).find('i').toggleClass('far');
-      $(`#${favId}`).find('i').toggleClass('fas');
+    if(currentUser){
+      const storyIds = Array.from($('li').attr('id'));
+      for (story of currentUser.favorites){
+        const favId = story.storyId;
+        $(`#${favId}`).find('i').toggleClass('far');
+        $(`#${favId}`).find('i').toggleClass('fas');
+      }
     }
   }
 
@@ -290,13 +314,39 @@ $(async function() {
   function populateUserFavs() {
     $favArticles.html("");
     for (story of currentUser.favorites){
-      storyMarkup = generateStoryHTML(story);
+      const storyMarkup = generateStoryHTML(story);
       $favArticles.prepend(storyMarkup);
     }
     $("i").toggleClass('far')
     $("i").toggleClass('fas')
   }
 
+// USERS OWN STORIES FUNCTIONALITY
+
+// populate users own articles under my storys
+  async function populateOwnArticles() {
+    // empty the article holding the stories
+    $userArticles.html("");
+    //retrieve user's own stories from the API
+    const ownStories = await currentUser.updateOwnStories();
+    // Generate markup and append to the DOM
+    for (story of ownStories){
+      const storyMarkup = generateStoryHTML(story);
+      $userArticles.prepend(storyMarkup);
+    }
+    // Remove the favorite stars and add a delete button
+    $userArticles.find("span").remove();
+    $userArticles.find("li").append($("<button class='dltButton'>Delete Story</button>"));
+  }
+
+  // Handle the delete button for a users own stories
+  async function handleStoryDelete(id){
+    // delete the story
+    const dltedStory = await currentUser.deleteStory(id);
+    // retrieve the users updated stories from the API
+    //const ownStories = await currentUser.updateOwnStories();
+    populateOwnArticles();
+  }
   
 });
 
