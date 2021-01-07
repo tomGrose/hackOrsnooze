@@ -31,12 +31,6 @@ a:hover {
 }
 
 
-.hidden {
-  display: none;
-}
-
-
-
 nav {
   display: flex;
   background-color: #ff6600;
@@ -239,4 +233,8 @@ form > hr {
     max-width: 900px;
     margin: 8px auto;
   }
+}
+
+.hidden {
+  display: none;
 }

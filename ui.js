@@ -11,6 +11,7 @@ $(async function() {
   const $navLinks = $("#main-nav-links");
   const $favArticles = $("#favorited-articles");
   const $userArticles = $("#my-articles");
+  const $profileLink = $("#nav-user-profile");
 
   // global storyList variable
   let storyList = null;
@@ -132,6 +133,9 @@ $(async function() {
 
     // update the navigation bar
     showNavForLoggedInUser();
+
+    // star the users favorites
+    starFavorites();
   }
 
   /**
@@ -199,6 +203,8 @@ $(async function() {
     $navLogin.hide();
     $navLogOut.show();
     $navLinks.show();
+    $("#nav-welcome").toggle();
+    $profileLink.append($(`<p>${currentUser.username}</p>`))
   }
 
   /* simple function to pull the hostname from a URL */
@@ -228,19 +234,19 @@ $(async function() {
   // EVENT HANDLERS
 
   //show submit form when it is clicked on in the nav
-  $("body").on("click", "#nav-submit-story", function() {
+  $("nav").on("click", "#nav-submit-story", function() {
     $submitForm.toggle();
   });
 
   //Show favorites list when clicked on
-  $("body").on("click", "#nav-favorites", function() {
+  $("nav").on("click", "#nav-favorites", function() {
     hideElements();
     $favArticles.toggle();
     populateUserFavs();
   });
 
   //Show My Stories list when clicked on
-  $("body").on("click", "#nav-my-stories", function() {
+  $("nav").on("click", "#nav-my-stories", function() {
     hideElements();
     $userArticles.toggle();
     populateOwnArticles();
@@ -265,6 +271,11 @@ $(async function() {
     const clickedStoryId = $(this).parents("li").attr('id');
     handleFavClicks(clickedStoryId, $clickedStar);
   });
+  
+  $("#nav-welcome").on("click", $profileLink, function() {
+    $("#user-profile").toggle();
+    populateUserprofile()
+  }); 
 
   // SUBMIT FORM FUNCTIONALITY
 
@@ -274,6 +285,7 @@ $(async function() {
     const newStory = await StoryList.addStory(currentUser, story);
     const usersStories = await currentUser.updateOwnStories();
     generateStories();
+    populateOwnArticles();
   }
 
 // USER FAVORITES FUNCTIONALITY
@@ -313,12 +325,16 @@ $(async function() {
   // Find the users favorited articles and populate them when user clicks on favorites.
   function populateUserFavs() {
     $favArticles.html("");
-    for (story of currentUser.favorites){
-      const storyMarkup = generateStoryHTML(story);
-      $favArticles.prepend(storyMarkup);
+    if (currentUser.favorites.length === 0){
+      $favArticles.append($("<h4>You have no favorites yet!</h4>"));
+    } else {
+      for (story of currentUser.favorites){
+        const storyMarkup = generateStoryHTML(story);
+        $favArticles.prepend(storyMarkup);
+      }
+      $("i").toggleClass('far')
+      $("i").toggleClass('fas')
     }
-    $("i").toggleClass('far')
-    $("i").toggleClass('fas')
   }
 
 // USERS OWN STORIES FUNCTIONALITY
@@ -329,14 +345,18 @@ $(async function() {
     $userArticles.html("");
     //retrieve user's own stories from the API
     const ownStories = await currentUser.updateOwnStories();
-    // Generate markup and append to the DOM
-    for (story of ownStories){
-      const storyMarkup = generateStoryHTML(story);
-      $userArticles.prepend(storyMarkup);
+    if (ownStories.length === 0){
+      $userArticles.append($("<h4>You have no stories!</h4>"));
+    } else {
+      // Generate markup and append to the DOM
+      for (story of ownStories){
+        const storyMarkup = generateStoryHTML(story);
+        $userArticles.prepend(storyMarkup);
+      }
+      // Remove the favorite stars and add a delete button
+      $userArticles.find("span").remove();
+      $userArticles.find("li").append($("<button class='dltButton'>Delete Story</button>"));
     }
-    // Remove the favorite stars and add a delete button
-    $userArticles.find("span").remove();
-    $userArticles.find("li").append($("<button class='dltButton'>Delete Story</button>"));
   }
 
   // Handle the delete button for a users own stories
@@ -348,6 +368,16 @@ $(async function() {
     populateOwnArticles();
   }
   
+  // POPULATE USER PROFILE
+
+  function populateUserprofile() {
+    if (currentUser){
+      $("#profile-name").text(`Name: ${currentUser.name}`);
+      $("#profile-username").text(`Username: ${currentUser.username}`);
+      $("#profile-account-date").text(`Account Created: ${currentUser.createdAt.slice(0,10)}`);
+    }
+  }
+
 });
 
 
