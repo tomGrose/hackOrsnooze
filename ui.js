@@ -267,9 +267,14 @@ $(async function() {
 
   // Create event listener that calls handle fav clicks when a star is clicked
   $("body").on("click", ".fa-star", async function() {
-    const $clickedStar = $(this);
-    const clickedStoryId = $(this).parents("li").attr('id');
-    handleFavClicks(clickedStoryId, $clickedStar);
+    if (!currentUser){
+      return;
+    } else {
+      const $clickedStar = $(this);
+      const clickedStoryId = $(this).parents("li").attr('id');
+      handleFavClicks(clickedStoryId, $clickedStar);
+    }
+    
   });
   
   $("#nav-welcome").on("click", $profileLink, function() {
