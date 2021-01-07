@@ -9,6 +9,7 @@ $(async function() {
   const $navLogin = $("#nav-login");
   const $navLogOut = $("#nav-logout");
   const $navLinks = $("#main-nav-links");
+  const $favArticles = $("#favorited-articles");
 
   // global storyList variable
   let storyList = null;
@@ -17,6 +18,7 @@ $(async function() {
   let currentUser = null;
 
   await checkIfLoggedIn();
+  
 
   /**
    * Event listener for logging in.
@@ -149,6 +151,8 @@ $(async function() {
       const result = generateStoryHTML(story);
       $allStoriesList.append(result);
     }
+    // Star them favorites
+    starFavorites()
   }
 
   /**
@@ -161,7 +165,7 @@ $(async function() {
     // render story markup
     const storyMarkup = $(`
       <li id="${story.storyId}">
-        <span class='star'></span>
+        <span class='star'><i class='far fa-star'></i></span>
         <a class="article-link" href="${story.url}" target="a_blank">
           <strong>${story.title}</strong>
         </a>
@@ -183,7 +187,8 @@ $(async function() {
       $filteredArticles,
       $ownStories,
       $loginForm,
-      $createAccountForm
+      $createAccountForm,
+      $favArticles
     ];
     elementsArr.forEach($elem => $elem.hide());
   }
@@ -223,17 +228,76 @@ $(async function() {
     $submitForm.toggle();
   });
 
+  //Show favorites list when clicked on
+  $("body").on("click", "#nav-favorites", async function() {
+    hideElements();
+    $favArticles.toggle();
+    populateUserFavs();
+  });
+
   $submitForm.on("submit", async function(evt) {
     evt.preventDefault(); // no page-refresh on submit
     submitStory();
-    $submitForm.reset();
+    // reset form
+    $submitForm.trigger("reset");
   });
 
+  // get new story values from submit form, call addStory method on storyList class. Generate stories so the Dom updates
   async function submitStory(){
     const story = {author: $("#author").val(), title: $("#title").val(), url: $("#url").val()};
     const newStory = await StoryList.addStory(currentUser, story);
     generateStories();
   }
+
+  // Create event listener that calls handle fav clicks when a star is clicked
+  $("body").on("click", ".fa-star", async function() {
+    const $clickedStar = $(this);
+    const clickedStoryId = $(this).parents("li").attr('id');
+    handleFavClicks(clickedStoryId, $clickedStar);
+  });
+
+  // Look through user's favorites to see if the clicked star is in it. If it is uncheck star and remove from favorites
+  // If it is not add to favorites
+  //User methods will updates currentUsers favs array either way
+  function handleFavClicks(id, $star){
+    let inFavs = false;
+    $star.toggleClass('fas');
+    $star.toggleClass('far');
+    // use a true false toggle so the api is only being called once when we find out whether the story is in favorites
+    for (story of currentUser.favorites){
+      if (story.storyId === id){
+        inFavs = true;
+      }
+    }
+    if (inFavs) {
+      currentUser.removeFavStory(id);
+    } else {
+      currentUser.addFavStory(id);
+    }
+  }
+
+  //check the stories on the page and highlight stars if in users favorites
+  function starFavorites(){
+    const storyIds = Array.from($('li').attr('id'));
+    for (story of currentUser.favorites){
+      const favId = story.storyId;
+      $(`#${favId}`).find('i').toggleClass('far');
+      $(`#${favId}`).find('i').toggleClass('fas');
+    }
+  }
+
+  // Find the users favorited articles and populate them when user clicks on favorites.
+  function populateUserFavs() {
+    $favArticles.html("");
+    for (story of currentUser.favorites){
+      storyMarkup = generateStoryHTML(story);
+      $favArticles.prepend(storyMarkup);
+    }
+    $("i").toggleClass('far')
+    $("i").toggleClass('fas')
+  }
+
+  
 });
 
 

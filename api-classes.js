@@ -162,6 +162,24 @@ class User {
     existingUser.ownStories = response.data.user.stories.map(s => new Story(s));
     return existingUser;
   }
+
+  // add a favorite story to users favorite stories
+  async addFavStory(storyId){
+    const result = await axios.post(`https://hack-or-snooze-v3.herokuapp.com/users/${this.username}/favorites/${storyId}`,  {
+        token: this.loginToken
+    });
+    this.favorites = result.data.user.favorites.map(s => new Story(s));
+  }
+
+  // remove a favorite story from users favorite stories
+  async removeFavStory(storyId){
+    const result = await axios.delete(`https://hack-or-snooze-v3.herokuapp.com/users/${this.username}/favorites/${storyId}`, { params:  {
+        token: this.loginToken
+      }
+    });
+    this.favorites = result.data.user.favorites.map(s => new Story(s));
+  }
+
 }
 
 /**
